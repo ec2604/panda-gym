@@ -8,7 +8,7 @@ import numpy as np
 import pybullet as p
 import pybullet_data
 import pybullet_utils.bullet_client as bc
-
+import pkgutil
 import panda_gym.assets
 
 
@@ -27,8 +27,10 @@ class PyBullet:
         self.background_color = background_color.astype(np.float64) / 255
         options = "--background_color_red={} \
                     --background_color_green={} \
-                    --background_color_blue={}".format(
-            *self.background_color
+                    --background_color_blue={} \
+                    --height={} \
+                    --width={}".format(
+            *self.background_color,84,84
         )
         self.connection_mode = p.GUI if render else p.DIRECT
         self.physics_client = bc.BulletClient(connection_mode=self.connection_mode, options=options)
@@ -40,6 +42,8 @@ class PyBullet:
         self.physics_client.setTimeStep(self.timestep)
         self.physics_client.resetSimulation()
         self.physics_client.setAdditionalSearchPath(pybullet_data.getDataPath())
+#        egl = pkgutil.get_loader('eglRenderer')
+#        self.physics_client.loadPlugin(egl.get_filename(), "_eglRendererPlugin")
         self.physics_client.setGravity(0, 0, -9.81)
         self._bodies_idx = {}
 
@@ -588,19 +592,23 @@ class PyBullet:
         if spinning_friction is not None:
             self.set_spinning_friction(body=body_name, link=-1, spinning_friction=spinning_friction)
 
-    def create_plane(self, z_offset: float) -> None:
+    def create_plane(self, z_offset: float, rgba=None) -> None:
         """Create a plane. (Actually, it is a thin box.)
 
         Args:
             z_offset (float): Offset of the plane.
         """
+        if rgba is None:
+            color = [0.15, 0.15, 0.15, 1.0]
+        else:
+            color = rgba
         self.create_box(
             body_name="plane",
             half_extents=np.array([3.0, 3.0, 0.01]),
             mass=0.0,
             position=np.array([0.0, 0.0, z_offset - 0.01]),
             specular_color=np.zeros(3),
-            rgba_color=np.array([0.15, 0.15, 0.15, 1.0]),
+            rgba_color=np.array(color),
         )
 
     def create_table(
@@ -611,6 +619,7 @@ class PyBullet:
         x_offset: float = 0.0,
         lateral_friction: Optional[float] = None,
         spinning_friction: Optional[float] = None,
+        rgba = None
     ) -> None:
         """Create a fixed table. Top is z=0, centered in y.
 
@@ -624,13 +633,17 @@ class PyBullet:
             spinning_friction (float or None, optional): Spinning friction. If None, use the default pybullet
                 value. Defaults to None.
         """
+        if rgba is None:
+            color = [0.95, 0.95, 0.95, 1]
+        else:
+            color = rgba
         self.create_box(
             body_name="table",
             half_extents=np.array([length, width, height]) / 2,
             mass=0.0,
             position=np.array([x_offset, 0.0, -height / 2]),
             specular_color=np.zeros(3),
-            rgba_color=np.array([0.95, 0.95, 0.95, 1]),
+            rgba_color=np.array(color),
             lateral_friction=lateral_friction,
             spinning_friction=spinning_friction,
         )
